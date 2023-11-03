@@ -16,8 +16,8 @@ def args():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-pdb", required=True)
-    parser.add_argument("-output", required=True)
+    parser.add_argument("-pdb", nargs="+", required=True)
+    parser.add_argument("-csv", required=True)
     parser.add_argument("-ligname", default="LG1")
 
     args = parser.parse_args()
@@ -264,17 +264,16 @@ class AtomsCalculator():
         return total_count / self.protein.shape[0]
     
 
-if __name__ == '__main__':
 
-    args = args()
+def process_pdb(pdbfname, ligname):
 
-    pdb = PandasPdb().read_pdb(args.pdb)
+    pdb = PandasPdb().read_pdb(pdbfname)
     
     protein = pdb.df["ATOM"]
     ligand  = pdb.df["HETATM"]
 
     protein = protein.query("element_symbol != 'H'").reset_index(drop=True)
-    ligand = ligand.query(f"residue_name != '{args.ligname}'")
+    ligand = ligand.query(f"residue_name != '{ligname}'")
 
     pocket = get_interface(ligand, protein, interface_cutoff=4.0)
 
@@ -286,7 +285,7 @@ if __name__ == '__main__':
 
 
     features = {}
-    features["PDBid"] = 
+    features["PDBid"] = pdbfname.split("/")[-1].split(".")[0]
     features["C_RESIDUE"] = pocket.drop_duplicates(["residue_name", "residue_number"]).shape[0]
     features["INERTIA_3"] = gcalc.get_inertia()
     features["SMALLEST_SIZE"] = gcalc.get_smallest_height()
@@ -300,9 +299,24 @@ if __name__ == '__main__':
     features["p_aliphatic_residue"] = res_calc.get_aliphatic_residues()
     features["p_aromatic_residue"] = res_calc.get_aromatic_residues()
     features["p_negative_residue"] = res_calc.get_negative_residues()
+
+    return features
+
+
+if __name__ == '__main__':
+
+    args = args()
     
-    with open(args.output, 'w') as f:
-        w = csv.DictWriter(f, features.keys())
+    results = []
+
+    for pdb_fname in results:
+        features = process_pdb(pdb_fname, args.ligname)
+        results.append(features)
+
+    with open(args.csv, 'w') as f:
+        w = csv.DictWriter(f, results[0].keys())
         w.writeheader()
-        w.writerow(features)
+
+        for features in results:
+            w.writerow(features)
 

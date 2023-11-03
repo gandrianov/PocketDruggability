@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PocketDruggability"
+version = "0.98.1"
+authors = [
+  { name="Grigorii Andrianov", email="grigorii.andrianov@gmail.com" },
+  { name="Shipra Malhotra", email="drshipramalhotra@gmail.com" },
+  { name="John Karanicolas", email="John.Karanicolas@fccc.edu" }
+]
+
+description = "A package for calculating maximum achievable potency of a protein surface"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "biopandas",
+  "freesasa",
+  "numpy",
+  "pandas",
+  "scipy",
+  "scikit-learn"
+]
+
+
+[project.urls]
+"Homepage" = "https://github.com/gandrianov/PocketDruggability"
+"Bug Tracker" = "https://github.com/gandrianov/PocketDruggability/issues"
