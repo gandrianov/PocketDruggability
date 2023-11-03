@@ -1,3 +1,5 @@
+import csv
+import argparse
 from biopandas.pdb import PandasPdb
 
 import freesasa
@@ -8,6 +10,18 @@ from scipy.linalg import eigvals
 from scipy.spatial import ConvexHull
 
 from sklearn.neighbors import KDTree
+
+
+def args():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-pdb", required=True)
+    parser.add_argument("-output", required=True)
+    parser.add_argument("-ligname", default="LG1")
+
+    args = parser.parse_args()
+
 
 def get_interface(ligand, protein, interface_cutoff):
 
@@ -252,17 +266,17 @@ class AtomsCalculator():
 
 if __name__ == '__main__':
 
+    args = args()
 
-    pdb = PandasPdb().read_pdb("mini_complex_PV-001797102843_6.pdb")
+    pdb = PandasPdb().read_pdb(args.pdb)
     
     protein = pdb.df["ATOM"]
     ligand  = pdb.df["HETATM"]
 
     protein = protein.query("element_symbol != 'H'").reset_index(drop=True)
-    # ligand = ligand.query("element_symbol != 'H'")
+    ligand = ligand.query(f"residue_name != '{args.ligname}'")
 
     pocket = get_interface(ligand, protein, interface_cutoff=4.0)
-
 
     sasa_calc = FreeSASACalculator(protein)
     gcalc = GeometryCalculator(pocket)
@@ -272,18 +286,23 @@ if __name__ == '__main__':
 
 
     features = {}
-    features["hydrophobicity_pocket"] = sasa_calc.get_hydrophobic_area(pocket)
-    features["VOLUME_HULL"] = gcalc.get_volume_hull()
-    features["SURFACE_HULL"] = gcalc.get_surface_hull()
+    features["PDBid"] = 
+    features["C_RESIDUE"] = pocket.drop_duplicates(["residue_name", "residue_number"]).shape[0]
     features["INERTIA_3"] = gcalc.get_inertia()
     features["SMALLEST_SIZE"] = gcalc.get_smallest_height()
+    features["SURFACE_HULL"] = gcalc.get_surface_hull()
+    features["VOLUME_HULL"] = gcalc.get_volume_hull()
     features["hydrophobic_kyte"] = h_calc.get_hydropathy_score(pocket)
-    features["p_aromatic_residue"] = res_calc.get_aromatic_residues()
-    features["p_aliphatic_residue"] = res_calc.get_aliphatic_residues()
-    features["p_negative_residue"] = res_calc.get_negative_residues()
-    features["p_N_atom"] = atom_calc.get_N()
+    features["hydrophobicity_pocket"] = sasa_calc.get_hydrophobic_area(pocket)
     features["p_Ccoo"] = atom_calc.get_Ccoo()
+    features["p_N_atom"] = atom_calc.get_N()
     features["p_Ooh"] = atom_calc.get_Ooh()
-
-    print(features)
+    features["p_aliphatic_residue"] = res_calc.get_aliphatic_residues()
+    features["p_aromatic_residue"] = res_calc.get_aromatic_residues()
+    features["p_negative_residue"] = res_calc.get_negative_residues()
+    
+    with open(args.output, 'w') as f:
+        w = csv.DictWriter(f, features.keys())
+        w.writeheader()
+        w.writerow(features)
 
