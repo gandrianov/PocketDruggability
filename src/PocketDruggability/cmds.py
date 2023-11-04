@@ -19,8 +19,9 @@ def featurize_pocket(pdb_fname, lig_name, interface_cutoff):
     pdb = PandasPdb().read_pdb(pdb_fname)
 
     protein = remove_hydrogens(pdb.df["ATOM"])
-    ligand  = extract_ligand(pdb.df["HETATM"], lig_name)
-
+    ligand  = remove_hydrogens(pdb.df["HETATM"])
+    ligand  = extract_ligand(ligand, lig_name)
+    
     pocket = get_pocket(ligand, protein, interface_cutoff)
 
     sasa_calc = FreeSASACalculator(protein)
