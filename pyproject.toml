@@ -33,3 +33,6 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/gandrianov/PocketDruggability"
 "Bug Tracker" = "https://github.com/gandrianov/PocketDruggability/issues"
+
+[project.scripts]
+"featurize_pocket" = "PocketDruggability.cmds:cmd_featurize_pocket"
