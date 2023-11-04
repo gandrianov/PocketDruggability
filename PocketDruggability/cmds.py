@@ -46,6 +46,25 @@ def featurize_pocket(pdb_fname, lig_name, interface_cutoff):
     # Identify the pocket based on the ligand and interface cutoff
     pocket = get_pocket(ligand, protein, interface_cutoff)
 
+    if pocket.shape[0] <= 3:
+        return  {
+            "PDBid": pdb_name,
+            "Seq": None,
+            "C_RESIDUE": None,
+            "INERTIA_3": None,
+            "SMALLEST_SIZE": None,
+            "SURFACE_HULL": None,
+            "VOLUME_HULL": None,
+            "hydrophobic_kyte": None,
+            "hydrophobicity_pocket": None,
+            "p_Ccoo": None,
+            "p_N_atom": None,
+            "p_Ooh": None,
+            "p_aliphatic_residue": None,
+            "p_aromatic_residue": None,
+            "p_negative_residue": None,
+        }
+
     # Initialize feature calculators
     sasa_calc = FreeSASACalculator(protein)
     geom_calc = GeometryCalculator(pocket)
