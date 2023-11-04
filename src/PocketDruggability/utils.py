@@ -17,12 +17,8 @@ def get_pocket(ligand, protein, interface_cutoff):
  
     return pocket
         
-
 def remove_hydrogens(atoms):
-
 	return atoms.query("element_symbol != 'H'").reset_index(drop=True)
 
-
 def extract_ligand(atoms, resn):
-
     return atoms.query(f"residue_name == '{resn}'")
