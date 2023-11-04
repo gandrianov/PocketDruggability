@@ -5,6 +5,8 @@ from scipy.linalg import eigvals
 from scipy.spatial import ConvexHull
 from sklearn.neighbors import KDTree
 
+from biopandas.pdb.engines import amino3to1dict as AMINO3TODICT
+
 class FreeSASACalculator():
 
     def __init__(self, protein, config_path=None):
@@ -75,6 +77,13 @@ class ResidueCalculator():
         unique_cols = ["residue_name", "residue_number"]
         self.sequence = protein.drop_duplicates(unique_cols)["residue_name"]
 
+    def get_sequence(self):
+
+        sequence = [AMINO3TODICT.get(s, "?") for s in self.sequence]
+        sequence = "".join(sequence)
+
+        return sequence
+
     def get_hydropathy_score(self):
 
         score = [self.scores.get(r, 0.0) for r in self.sequence]
@@ -85,29 +94,22 @@ class ResidueCalculator():
     def _get_num_residues(self, residues=[]):
 
         count = self.sequence.query(f"residue_name in @ residues")
-        return len(count)
+        return len(count) / len(self.sequence)
 
     def get_num_aromatic_residues(self):
 
-        residues = ["PHE", "TYR", "HIS", "TRP"]
-        count = self._get_num_residues(residues)
-        
-        return count / len(self.sequence)
+        residues = ["PHE", "TYR", "HIS", "TRP"]        
+        return self._get_num_residues(residues)
         
     def get_num_aliphatic_residues(self):
 
         residues = ["ILE", "LEU", "VAL"]
-        count = self._get_num_residues(residues)
-        
-        return count / len(self.sequence)
+        return self._get_num_residues(residues)
 
     def get_num_negative_residues(self):
 
         residues = ["ASP", "GLU"]
-
-        count = self._get_num_residues(residues)
-        
-        return count / len(self.sequence)
+        return self._get_num_residues(residues)
 
 
 class AtomsCalculator():
@@ -115,67 +117,59 @@ class AtomsCalculator():
     def __init__(self, protein):
         self.protein = protein
 
-    def get_N(self):
+    def _get_num_atoms(self, atom_name, include_res=[], exclude_res=[]):
+
+        count = 0
+
+        atoms = self.protein.query(f"atom_name == '{atom_name}'")
+
+        if len(include_res) != 0:
+            atoms = atoms.query("residue_name in @ include_res")
+
+        if len(exclude_res) != 0:
+            atoms = atoms.query("residue_name not in @ exclude_res")
+        
+        return atoms.shape[0] / self.protein.shape[0]
+
+    def get_num_N(self):
 
         atoms = [[None, "N"], ["GLN", "NE2"], ["ASN", "ND1"]]
+        residues = [a for r, a in atoms if r is not None]
 
-        total_count = 0
+        total = 0
 
-        for res_name, atom_name in atoms:
+        for resn, atomn in atoms:
 
-            df = self.protein
-
-            if res_name is not None:
-                df = df.query(f"residue_name == '{res_name}'")
+            if resn is None:
+                total += self._get_num_atoms(atomn, exclude_res=[residues])
             else:
-                df = df[~df["residue_name"].isin(["GLN", "ASN"])]
+                total += self._get_num_atoms(atomn, include_res=[resn])
 
-            if atom_name is not None:
-                df = df.query(f"atom_name == '{atom_name}'")
+        return total
 
-            total_count += df.shape[0]
-        
-        return total_count / self.protein.shape[0]
-
-    def get_Ccoo(self):
+    def get_num_Ccoo(self):
 
         atoms = [["ASP", "CB"], ["GLU", "CG"]]
-
-        total_count = 0
-
-        for res_name, atom_name in atoms:
-
-            df = self.protein
-
-            if res_name is not None:
-                df = df.query(f"residue_name == '{res_name}'")
-
-            if atom_name is not None:
-                df = df.query(f"atom_name == '{atom_name}'")
-
-            total_count += df.shape[0]
         
-        return total_count / self.protein.shape[0]
+        total = 0
 
-    def get_Ooh(self):
+        for resn, atomn in atoms:
+            total += self._get_num_atoms(atomn, include_res=[resn])
+
+        return total
+
+
+
+    def get_num_Ooh(self):
         
         atoms = [["SER", "CB"], ["THR", "CB"]]
 
-        total_count = 0
+        total = 0
 
-        for res_name, atom_name in atoms:
+        for resn, atomn in atoms:
+            total += self._get_num_atoms(atomn, include_res=[resn])
 
-            df = self.protein
-
-            if res_name is not None:
-                df = df.query(f"residue_name == '{res_name}'")
-
-            if atom_name is not None:
-                df = df.query(f"atom_name == '{atom_name}'")
-
-            total_count += df.shape[0]
-        
-        return total_count / self.protein.shape[0]
+        return total
 
 
 
