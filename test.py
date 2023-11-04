@@ -10,7 +10,7 @@ from PocketDruggability.utils import get_pocket
 from PocketDruggability.cmds import featurize_pocket
 
 
-complexes = glob.glob("tests/TA99/Complexes/*pdb")
+complexes = glob.glob("tests/Complexes/*pdb")
 
 apo = [c.replace("/Complexes/", "/Apo/").replace("_Complex", "") for c in complexes]
 ligands = [c.replace("/Complexes/", "/Ligands/").replace("_Complex", "_ligand") for c in complexes]
