@@ -76,17 +76,18 @@ class ResidueCalculator():
 
         unique_cols = ["residue_name", "residue_number"]
         self.sequence = protein.drop_duplicates(unique_cols)["residue_name"]
+        self.sequence = self.sequence.to_frame()
 
     def get_sequence(self):
 
-        sequence = [AMINO3TODICT.get(s, "?") for s in self.sequence]
+        sequence = [AMINO3TODICT.get(s, "?") for s in self.sequence.T.values[0]]
         sequence = "".join(sequence)
 
         return sequence
 
     def get_hydropathy_score(self):
 
-        score = [self.scores.get(r, 0.0) for r in self.sequence]
+        score = [self.scores.get(r, 0.0) for r in self.sequence.T.values[0]]
         score = sum(score) / len(self.sequence)
 
         return score
@@ -112,7 +113,7 @@ class ResidueCalculator():
         return self._get_num_residues(residues)
 
 
-class AtomsCalculator():
+class AtomCalculator():
 
     def __init__(self, protein):
         self.protein = protein
@@ -212,33 +213,22 @@ class GeometryCalculator():
     def get_smallest_height(self):
 
         closest_distance = float('inf')
-        closest_pair = None
+        closest_pair_planes = None
 
-        for simplex in self.hull.simplices:
+        for i, normal in enumerate(self.hull.equations[:, :-1]):
 
-            normal = self.hull.equations[simplex[0], :-1]
-            offset = self.hull.equations[simplex[0], -1]
+            plane_offset = self.hull.equations[i, -1]
+
+            distances = np.dot(self.atoms, normal) + plane_offset
+    
+            max_distance_point = self.atoms[np.argmax(distances)]
+            min_distance_point = self.atoms[np.argmin(distances)]
             
-            projections = np.dot(self.atoms, normal)
-            min_point = self.atoms[projections.argmin()]
-            max_point = self.atoms[projections.argmax()]
-            
-            distance = np.dot(normal, max_point - min_point)
+            distance = np.max(distances) - np.min(distances)
             
             if distance < closest_distance:
                 closest_distance = distance
-                closest_pair = (min_point, max_point, distance, normal)
+                closest_pair_planes = (normal, -normal, closest_distance)
 
-        return closest_pair[2]
-
-
-
-
-
-
-
-
-
-
-    
+        return closest_pair_planes[2]
 

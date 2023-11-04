@@ -25,4 +25,4 @@ def remove_hydrogens(atoms):
 
 def extract_ligand(atoms, resn):
 
-    return atoms.query(f"residue_name != '{resn}'")
+    return atoms.query(f"residue_name == '{resn}'")

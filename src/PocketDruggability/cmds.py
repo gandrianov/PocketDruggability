@@ -8,7 +8,7 @@ from .utils import get_pocket
 
 from .calculators import FreeSASACalculator
 from .calculators import ResidueCalculator
-from .calculators import AtomsCalculator
+from .calculators import AtomCalculator
 from .calculators import GeometryCalculator
 
 
@@ -59,14 +59,16 @@ def cmd_featurize_pocket():
     parser.add_argument("-csv", required=True)
     parser.add_argument("-lig_name", default="LG1")
     parser.add_argument("-interface_cutoff", default=4.0)
-    
 
     args = parser.parse_args()   
     
     results = []
 
     for pdb_fname in args.pdb:
-        features = process_pdb(pdb_fname, args.ligname)
+        print("Processing:", pdb_fname)
+        features = featurize_pocket(pdb_fname, 
+                                    args.lig_name,
+                                    args.interface_cutoff)
         results.append(features)
 
     with open(args.csv, 'w') as f:
