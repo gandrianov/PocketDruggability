@@ -17,56 +17,53 @@ ligands = [c.replace("/Complexes/", "/Ligands/").replace("_Complex", "_ligand") 
 pockets = [c.replace("/Complexes/", "/Pocket/").replace("_Complex", "_prox4_pock") for c in complexes]
 reports = [c.replace("/Complexes/", "/Reports/Features_").replace("_Complex.pdb", ".rpt") for c in complexes]
 
-
-# @pytest.mark.parametrize("complex_fname, expected_fname", zip(complexes, apo))
-# def test_apo(complex_fname, expected_fname):
+@pytest.mark.parametrize("complex_fname, expected_fname", zip(complexes, apo))
+def test_apo(complex_fname, expected_fname):
     
-#     test_apo = PandasPdb().read_pdb(complex_fname)
-#     test_apo = remove_hydrogens(test_apo.df["ATOM"])
-#     test_apo = test_apo.drop("line_idx", axis=1)
+    test_apo = PandasPdb().read_pdb(complex_fname)
+    test_apo = remove_hydrogens(test_apo.df["ATOM"])
+    test_apo = test_apo.drop("line_idx", axis=1)
 
-#     expected_apo = PandasPdb().read_pdb(expected_fname)
-#     expected_apo = expected_apo.df["ATOM"].drop("line_idx", axis=1)
+    expected_apo = PandasPdb().read_pdb(expected_fname)
+    expected_apo = expected_apo.df["ATOM"].drop("line_idx", axis=1)
     
-#     assert test_apo.equals(expected_apo)
+    assert test_apo.equals(expected_apo)
 
-# @pytest.mark.parametrize("complex_fname, expected_fname", zip(complexes, ligands))
-# def test_ligand(complex_fname, expected_fname):
+@pytest.mark.parametrize("complex_fname, expected_fname", zip(complexes, ligands))
+def test_ligand(complex_fname, expected_fname):
     
-#     lig_name = "TMP"
-#     test_ligand = PandasPdb().read_pdb(complex_fname)
-#     test_ligand = remove_hydrogens(test_ligand.df["HETATM"])
-#     test_ligand  = extract_ligand(test_ligand, lig_name)
-#     test_ligand = test_ligand.drop("line_idx", axis=1).reset_index(drop=True)
+    lig_name = "TMP"
+    test_ligand = PandasPdb().read_pdb(complex_fname)
+    test_ligand = remove_hydrogens(test_ligand.df["HETATM"])
+    test_ligand  = extract_ligand(test_ligand, lig_name)
+    test_ligand = test_ligand.drop("line_idx", axis=1).reset_index(drop=True)
 
-#     expected_ligand = PandasPdb().read_pdb(expected_fname)
-#     expected_ligand = expected_ligand.df["HETATM"].drop("line_idx", axis=1)
+    expected_ligand = PandasPdb().read_pdb(expected_fname)
+    expected_ligand = expected_ligand.df["HETATM"].drop("line_idx", axis=1)
 
-#     assert test_ligand.equals(expected_ligand)
+    assert test_ligand.equals(expected_ligand)
 
 
-# @pytest.mark.parametrize("complex_fname, expected_fname", zip(complexes, pockets))
-# def test_pocket(complex_fname, expected_fname):
+@pytest.mark.parametrize("complex_fname, expected_fname", zip(complexes, pockets))
+def test_pocket(complex_fname, expected_fname):
 
-#     lig_name = "TMP"
-#     interface_cutoff = 4.0000001
+    lig_name = "TMP"
+    interface_cutoff = 4.0000001
 
-#     test_pdb = PandasPdb().read_pdb(complex_fname)
+    test_pdb = PandasPdb().read_pdb(complex_fname)
 
-#     test_apo = remove_hydrogens(test_pdb.df["ATOM"])
+    test_apo = remove_hydrogens(test_pdb.df["ATOM"])
 
-#     test_ligand = remove_hydrogens(test_pdb.df["HETATM"])
-#     test_ligand = extract_ligand(test_ligand, lig_name)
+    test_ligand = remove_hydrogens(test_pdb.df["HETATM"])
+    test_ligand = extract_ligand(test_ligand, lig_name)
 
-#     test_pocket = get_pocket(test_ligand, test_apo, interface_cutoff)
-#     test_pocket = test_pocket.drop("line_idx", axis=1).reset_index(drop=True)
+    test_pocket = get_pocket(test_ligand, test_apo, interface_cutoff)
+    test_pocket = test_pocket.drop("line_idx", axis=1).reset_index(drop=True)
 
-#     expected_pocket = PandasPdb().read_pdb(expected_fname)
-#     expected_pocket = expected_pocket.df["ATOM"].drop("line_idx", axis=1)
+    expected_pocket = PandasPdb().read_pdb(expected_fname)
+    expected_pocket = expected_pocket.df["ATOM"].drop("line_idx", axis=1)
 
-#     print(test_pocket.shape, expected_pocket.shape)
-
-#     assert test_pocket.equals(expected_pocket)
+    assert test_pocket.equals(expected_pocket)
 
 @pytest.mark.parametrize("complex_fname, expected_fname", zip(complexes, reports))
 def test_reports(complex_fname, expected_fname):
