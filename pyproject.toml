@@ -29,6 +29,7 @@ dependencies = [
   "scikit-learn"
 ]
 
+package_data = {"": ["configs/*"]}
 
 [project.urls]
 "Homepage" = "https://github.com/gandrianov/PocketDruggability"
