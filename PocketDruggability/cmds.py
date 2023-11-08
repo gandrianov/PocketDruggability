@@ -9,7 +9,7 @@ from .utils import remove_hydrogens, extract_ligand, get_pocket
 from .calculators import FreeSASACalculator, ResidueCalculator, AtomCalculator, GeometryCalculator
 
 
-def featurize_pocket(pdb_fname, lig_name, interface_cutoff):
+def pocket_features(pdb_fname, lig_name, interface_cutoff):
     """
     Extract features of the interaction pocket between a protein and a ligand.
 
@@ -33,10 +33,14 @@ def featurize_pocket(pdb_fname, lig_name, interface_cutoff):
 
     """
     # Extract the base name of the PDB file without path and extension
-    pdb_name = pdb_fname.split("/")[-1].split(".")[0]
 
-    # Read the PDB file into a PandasPdb object
-    pdb = PandasPdb().read_pdb(pdb_fname)
+    if isinstance(pdb_fname, str):
+        pdb_name = pdb_fname.split("/")[-1].split(".")[0]
+        # Read the PDB file into a PandasPdb object
+        pdb = PandasPdb().read_pdb(pdb_fname)
+    elif isinstance(pdb_fname, list):
+        pdb_name = None
+        pdb = PandasPdb().read_pdb_from_list(pdb_fname)
 
     # Process the protein and ligand data
     protein = remove_hydrogens(pdb.df["ATOM"])
@@ -115,7 +119,7 @@ def cmd_featurize_pocket():
     # Process each PDB file and collect features
     for pdb_fname in args.pdb:
         print("Processing:", pdb_fname)
-        features = featurize_pocket(pdb_fname, args.lig_name, args.interface_cutoff)
+        features = pocket_features(pdb_fname, args.lig_name, args.interface_cutoff)
         results.append(features)
 
     # Write the features to the specified CSV file
