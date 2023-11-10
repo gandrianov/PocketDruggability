@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [tool.setuptools.package-data]
-package_data = ["configs/*"]
+PocketDruggability = ["configs/*.config"]
 
 [project.urls]
 "Homepage" = "https://github.com/gandrianov/PocketDruggability"
