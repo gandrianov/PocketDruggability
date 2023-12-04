@@ -1,5 +1,7 @@
+import os
 import csv
 import argparse
+from xgboost import XGBRegressor
 from biopandas.pdb import PandasPdb
 
 # Import utility functions from a relative package
@@ -96,6 +98,23 @@ def pocket_features(pdb_fname, lig_name, interface_cutoff):
 
     return features
 
+def predict_activity(features):
+
+    feature_cols = ["C_RESIDUE", "INERTIA_3", "SMALLEST_SIZE", "SURFACE_HULL", 
+                    "VOLUME_HULL", "hydrophobic_kyte", "hydrophobicity_pocket", 
+                    "p_Ccoo", "p_N_atom", "p_Ooh", "p_aliphatic_residue", 
+                    "p_aromatic_residue", "p_negative_residue"]
+
+
+    features = [[f[c] for c in feature_cols] for f in features]
+
+    model = XGBRegressor()
+    model.load_model(os.path.dirname(__file__) + "/models/regressor.json")
+
+    p_act = model.predict(features)
+
+    return p_act 
+
 
 def cmd_featurize_pocket():
     """
@@ -121,6 +140,9 @@ def cmd_featurize_pocket():
         print("Processing:", pdb_fname)
         features = pocket_features(pdb_fname, args.lig_name, args.interface_cutoff)
         results.append(features)
+
+    p_acts = predict_activity(results)
+    results = [{**f, "PredictedActivity": p_act} for f, p_act in zip(results, p_acts)]
 
     # Write the features to the specified CSV file
     with open(args.csv, 'w', newline='') as f:
