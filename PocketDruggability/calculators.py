@@ -144,7 +144,7 @@ class ResidueCalculator:
             "ASP": -3.5, "ASN": -3.5, "LYS": -3.9, "ARG": -4.5
         }
 
-        unique_cols = ["residue_name", "residue_number"]
+        unique_cols = ["residue_name", "residue_number", "chain_id"]
         self.sequence = protein.drop_duplicates(unique_cols)["residue_name"]
         self.sequence = self.sequence.to_frame()
 

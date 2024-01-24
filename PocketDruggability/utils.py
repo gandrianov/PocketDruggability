@@ -49,6 +49,35 @@ def get_pocket(ligand, protein, interface_cutoff):
     pocket = protein.iloc[indices]
  
     return pocket
+
+def extract_alt(atoms, alt="A"):
+    """
+    Extract atoms of a ligand with a specified residue name from a DataFrame of atoms.
+
+    Parameters
+    ----------
+    atoms : DataFrame
+        A pandas DataFrame containing atom information, including a 'residue_name'
+        column to identify the ligand to which each atom belongs.
+    resn : str
+        The residue name of the ligand to be extracted.
+
+    Returns
+    -------
+    DataFrame
+        A pandas DataFrame containing only the atoms that belong to the ligand
+        with the specified residue name.
+
+    Examples
+    --------
+    >>> ligand_df = extract_ligand(atom_df, 'LIG')
+    """
+
+    alts = ["", alt]
+    state = atoms.query(f"`alt_loc` in @alts").reset_index(drop=True)
+
+    return state
+
         
 def remove_hydrogens(atoms):
     """
@@ -74,7 +103,7 @@ def remove_hydrogens(atoms):
     """
     return atoms.query("element_symbol != 'H'").reset_index(drop=True)
 
-def extract_ligand(atoms, resn):
+def extract_ligand(atoms, resname, resnumber, chain):
     """
     Extract atoms of a ligand with a specified residue name from a DataFrame of atoms.
 
@@ -96,4 +125,9 @@ def extract_ligand(atoms, resn):
     --------
     >>> ligand_df = extract_ligand(atom_df, 'LIG')
     """
-    return atoms.query(f"residue_name == '{resn}'")
+
+    ligand = atoms.query(f"residue_name == '{resname}'")
+    ligand = ligand.query(f"residue_number == {resnumber}")
+    ligand = ligand.query(f"chain_id == '{chain}'")
+
+    return ligand.reset_index(drop=True)

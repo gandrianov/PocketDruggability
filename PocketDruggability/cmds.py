@@ -5,13 +5,12 @@ from xgboost import XGBRegressor
 from biopandas.pdb import PandasPdb
 
 # Import utility functions from a relative package
-from .utils import remove_hydrogens, extract_ligand, get_pocket
+from .utils import remove_hydrogens, extract_ligand, extract_alt, get_pocket
 
 # Import calculator classes from a relative package
 from .calculators import FreeSASACalculator, ResidueCalculator, AtomCalculator, GeometryCalculator
 
-
-def pocket_features(pdb_fname, lig_name, interface_cutoff):
+def pocket_features(pdb_fname, lig_name, lig_number, lig_chain, lig_alt, protein_alt, interface_cutoff):
     """
     Extract features of the interaction pocket between a protein and a ligand.
 
@@ -46,8 +45,38 @@ def pocket_features(pdb_fname, lig_name, interface_cutoff):
 
     # Process the protein and ligand data
     protein = remove_hydrogens(pdb.df["ATOM"])
+    protein = extract_alt(protein, protein_alt)
+
     ligand = remove_hydrogens(pdb.df["HETATM"])
-    ligand = extract_ligand(ligand, lig_name)
+    ligand = extract_ligand(ligand, lig_name, lig_number, lig_chain)
+    ligand = extract_alt(ligand, lig_alt)
+    # print(ligand.shape)
+
+    import pandas as pd
+
+    pd.set_option("display.max_columns", None)
+    pd.set_option("display.max_rows", None)
+    # print(ligand)
+
+    if ligand.shape[0] == 0:
+        return  {
+            "PDBid": pdb_name,
+            "Seq": None,
+            "C_ATOM":None,
+            "C_RESIDUE": None,
+            "INERTIA_3": None,
+            "SMALLEST_SIZE": None,
+            "SURFACE_HULL": None,
+            "VOLUME_HULL": None,
+            "hydrophobic_kyte": None,
+            "hydrophobicity_pocket": None,
+            "p_Ccoo": None,
+            "p_N_atom": None,
+            "p_Ooh": None,
+            "p_aliphatic_residue": None,
+            "p_aromatic_residue": None,
+            "p_negative_residue": None,
+        }
     
     # Identify the pocket based on the ligand and interface cutoff
     pocket = get_pocket(ligand, protein, interface_cutoff)
@@ -56,6 +85,7 @@ def pocket_features(pdb_fname, lig_name, interface_cutoff):
         return  {
             "PDBid": pdb_name,
             "Seq": None,
+            "C_ATOM":None,
             "C_RESIDUE": None,
             "INERTIA_3": None,
             "SMALLEST_SIZE": None,
@@ -81,6 +111,7 @@ def pocket_features(pdb_fname, lig_name, interface_cutoff):
     features = {
         "PDBid": pdb_name,
         "Seq": resi_calc.get_sequence(),
+        "C_ATOM": pocket.shape[0],
         "C_RESIDUE": len(resi_calc.get_sequence()),
         "INERTIA_3": geom_calc.get_inertia(),
         "SMALLEST_SIZE": geom_calc.get_smallest_height(),
@@ -128,8 +159,13 @@ def cmd_featurize_pocket():
     parser = argparse.ArgumentParser(description="Extract features of protein-ligand pockets from PDB files.")
     parser.add_argument("-pdb", nargs="+", required=True, help="PDB file(s) to process.")
     parser.add_argument("-csv", required=True, help="Output CSV file to store the features.")
+    parser.add_argument("-predict", default=True, help="Ligand residue name to consider.")
     parser.add_argument("-lig_name", default="LG1", help="Ligand residue name to consider.")
-    parser.add_argument("-interface_cutoff", type=float, default=4.0, help="Interface cutoff distance.")
+    parser.add_argument("-lig_number", default=1, help="Ligand residue number to consider.")
+    parser.add_argument("-lig_chain", default="X", help="Ligand chain name to consider.")
+    parser.add_argument("-lig_alt", default="A", help="Ligand state to consider.")
+    parser.add_argument("-protein_alt", default="A", help="Protein state to consider.")
+    parser.add_argument("-interface_cutoff", default=4.0, help="Interface cutoff distance.")
 
     args = parser.parse_args()
     
@@ -138,11 +174,12 @@ def cmd_featurize_pocket():
     # Process each PDB file and collect features
     for pdb_fname in args.pdb:
         print("Processing:", pdb_fname)
-        features = pocket_features(pdb_fname, args.lig_name, args.interface_cutoff)
+        features = pocket_features(pdb_fname, args.lig_name, args.lig_number, args.lig_chain, args.lig_alt, args.protein_alt, args.interface_cutoff)
         results.append(features)
 
-    p_acts = predict_activity(results)
-    results = [{**f, "PredictedActivity": p_act} for f, p_act in zip(results, p_acts)]
+    if args.predict:
+        p_acts = predict_activity(results)
+        results = [{**f, "PredictedActivity": p_act} for f, p_act in zip(results, p_acts)]
 
     # Write the features to the specified CSV file
     with open(args.csv, 'w', newline='') as f:
