@@ -144,6 +144,21 @@ def predict_activity(features):
 
     p_act = model.predict(features)
 
+    # scaling of prediction
+
+    lmbda = 2.120340416765484
+    
+    y_pred_t_min = 5.732265
+    y_pred_t_max = 53.03578
+
+    y_min = 2.222
+    y_max = 11.854
+    
+    p_act_t = (p_act ** lmbda - 1) / lmbda
+
+    y_pred_t = (p_act_t - y_pred_t_min) / (y_pred_t_max - y_pred_t_min)
+    y_pred_t = y_pred_t * (y_max - y_min) + y_min
+
     return p_act 
 
 
