@@ -5,12 +5,13 @@ from xgboost import XGBRegressor
 from biopandas.pdb import PandasPdb
 
 # Import utility functions from a relative package
-from .utils import remove_hydrogens, extract_ligand, extract_alt, get_pocket
+from .utils import remove_hydrogens, extract_ligand, extract_chain
+from .utils import extract_alt, get_pocket
 
 # Import calculator classes from a relative package
 from .calculators import FreeSASACalculator, ResidueCalculator, AtomCalculator, GeometryCalculator
 
-def pocket_features(pdb_fname, lig_name, lig_number, lig_chain, lig_alt, protein_alt, interface_cutoff):
+def pocket_features(pdb_fname, lig_name, lig_number, lig_chain, lig_alt, protein_alt, interface_cutoff, same_chain):
     """
     Extract features of the interaction pocket between a protein and a ligand.
 
@@ -35,32 +36,29 @@ def pocket_features(pdb_fname, lig_name, lig_number, lig_chain, lig_alt, protein
     """
     # Extract the base name of the PDB file without path and extension
 
-    if isinstance(pdb_fname, str):
-        pdb_name = pdb_fname.split("/")[-1].split(".")[0]
-        # Read the PDB file into a PandasPdb object
-        pdb = PandasPdb().read_pdb(pdb_fname)
-    elif isinstance(pdb_fname, list):
-        pdb_name = None
-        pdb = PandasPdb().read_pdb_from_list(pdb_fname)
+    pdb_name = pdb_fname.split("/")[-1].split(".")[0]
+    # Read the PDB file into a PandasPdb object
+    pdb = PandasPdb().read_pdb(pdb_fname)
 
     # Process the protein and ligand data
     protein = remove_hydrogens(pdb.df["ATOM"])
     protein = extract_alt(protein, protein_alt)
 
+    if same_chain:
+        protein = extract_chain(protein, lig_chain)
+
     ligand = remove_hydrogens(pdb.df["HETATM"])
     ligand = extract_ligand(ligand, lig_name, lig_number, lig_chain)
     ligand = extract_alt(ligand, lig_alt)
-    # print(ligand.shape)
-
-    import pandas as pd
-
-    pd.set_option("display.max_columns", None)
-    pd.set_option("display.max_rows", None)
-    # print(ligand)
 
     if ligand.shape[0] == 0:
         return  {
             "PDBid": pdb_name,
+            "Ligand name":lig_name,
+            "Ligand number":lig_number,
+            "Ligand chain":lig_chain,
+            "Ligand alt":lig_alt,
+            "Protein alt":protein_alt,
             "Seq": None,
             "C_ATOM":None,
             "C_RESIDUE": None,
@@ -84,6 +82,11 @@ def pocket_features(pdb_fname, lig_name, lig_number, lig_chain, lig_alt, protein
     if pocket.shape[0] <= 3:
         return  {
             "PDBid": pdb_name,
+            "Ligand name":lig_name,
+            "Ligand number":lig_number,
+            "Ligand chain":lig_chain,
+            "Ligand alt":lig_alt,
+            "Protein alt":protein_alt,
             "Seq": None,
             "C_ATOM":None,
             "C_RESIDUE": None,
@@ -110,6 +113,11 @@ def pocket_features(pdb_fname, lig_name, lig_number, lig_chain, lig_alt, protein
     # Calculate features and store them in a dictionary
     features = {
         "PDBid": pdb_name,
+        "Ligand name":lig_name,
+        "Ligand number":lig_number,
+        "Ligand chain":lig_chain,
+        "Ligand alt":lig_alt,
+        "Protein alt":protein_alt,
         "Seq": resi_calc.get_sequence(),
         "C_ATOM": pocket.shape[0],
         "C_RESIDUE": len(resi_calc.get_sequence()),
@@ -146,21 +154,11 @@ def predict_activity(features):
 
     # scaling of prediction
 
-    lmbda = 2.120340416765484
+    lambda_ = 1.2
+    p_act_t = (p_act ** lambda_ - 1) / lambda_
+
+    return p_act, p_act_t
     
-    y_pred_t_min = 5.732265
-    y_pred_t_max = 53.03578
-
-    y_min = 2.222
-    y_max = 11.854
-    
-    p_act_t = (p_act ** lmbda - 1) / lmbda
-
-    y_pred_t = (p_act_t - y_pred_t_min) / (y_pred_t_max - y_pred_t_min)
-    y_pred_t = y_pred_t * (y_max - y_min) + y_min
-
-    return p_act 
-
 
 def cmd_featurize_pocket():
     """
@@ -181,6 +179,7 @@ def cmd_featurize_pocket():
     parser.add_argument("-lig_alt", default="A", help="Ligand state to consider.")
     parser.add_argument("-protein_alt", default="A", help="Protein state to consider.")
     parser.add_argument("-interface_cutoff", default=4.0, help="Interface cutoff distance.")
+    parser.add_argument("-same_chain", action='store_true')
 
     args = parser.parse_args()
     
@@ -189,12 +188,12 @@ def cmd_featurize_pocket():
     # Process each PDB file and collect features
     for pdb_fname in args.pdb:
         print("Processing:", pdb_fname)
-        features = pocket_features(pdb_fname, args.lig_name, args.lig_number, args.lig_chain, args.lig_alt, args.protein_alt, args.interface_cutoff)
+        features = pocket_features(pdb_fname, args.lig_name, args.lig_number, args.lig_chain, args.lig_alt, args.protein_alt, args.interface_cutoff, args.same_chain)
         results.append(features)
 
     if args.predict:
-        p_acts = predict_activity(results)
-        results = [{**f, "PredictedActivity": p_act} for f, p_act in zip(results, p_acts)]
+        p_acts, p_acts_t = predict_activity(results)
+        results = [{**f, "PredictedActivity": p_act, "PredictedActivityT": p_act_t} for f, p_act, p_act_t in zip(results, p_acts, p_acts_t)]
 
     # Write the features to the specified CSV file
     with open(args.csv, 'w', newline='') as f:

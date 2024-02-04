@@ -131,3 +131,28 @@ def extract_ligand(atoms, resname, resnumber, chain):
     ligand = ligand.query(f"chain_id == '{chain}'")
 
     return ligand.reset_index(drop=True)
+
+def extract_chain(atoms, chain):
+    """
+    Extract atoms of a ligand with a specified residue name from a DataFrame of atoms.
+
+    Parameters
+    ----------
+    atoms : DataFrame
+        A pandas DataFrame containing atom information, including a 'residue_name'
+        column to identify the ligand to which each atom belongs.
+    resn : str
+        The residue name of the ligand to be extracted.
+
+    Returns
+    -------
+    DataFrame
+        A pandas DataFrame containing only the atoms that belong to the ligand
+        with the specified residue name.
+
+    Examples
+    --------
+    >>> ligand_df = extract_ligand(atom_df, 'LIG')
+    """
+
+    return atoms.query(f"chain_id == '{chain}'").reset_index(drop=True)
