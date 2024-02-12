@@ -36,9 +36,13 @@ def pocket_features(pdb_fname, lig_name, lig_number, lig_chain, lig_alt, protein
     """
     # Extract the base name of the PDB file without path and extension
 
-    pdb_name = pdb_fname.split("/")[-1].split(".")[0]
-    # Read the PDB file into a PandasPdb object
-    pdb = PandasPdb().read_pdb(pdb_fname)
+    if isinstance(pdb_fname, str):
+        pdb_name = pdb_fname.split("/")[-1].split(".")[0]
+        # Read the PDB file into a PandasPdb object
+        pdb = PandasPdb().read_pdb(pdb_fname)
+    elif isinstance(pdb_fname, list):
+        pdb_name = None
+        pdb = PandasPdb().read_pdb_from_list(pdb_fname)
 
     # Process the protein and ligand data
     protein = remove_hydrogens(pdb.df["ATOM"])
